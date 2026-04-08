@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Participant {
+  id           String       @id @default(cuid())
+  name         String
+  phone        String
+  cpf          String
+  cpfHash      String       @unique
+  spinAttempts Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  spinResults  SpinResult[]
+
+  @@index([cpf])
+}
+
+model Item {
+  id            String           @id @default(cuid())
+  name          String
+  imageUrl      String
+  originalPrice Decimal
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  resultItems   SpinResultItem[]
+}
+
+model SpinResult {
+  id              String           @id @default(cuid())
+  participantId   String
+  attemptNumber   Int
+  finalPrice      Decimal
+  originalTotal   Decimal
+  discountAmount  Decimal
+  discountPercent Decimal
+  isSold          Boolean          @default(false)
+  soldAt          DateTime?
+  createdAt       DateTime         @default(now())
+
+  participant Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  items       SpinResultItem[]
+
+  @@unique([participantId, attemptNumber])
+  @@index([participantId, createdAt(sort: Desc)])
+}
+
+model SpinResultItem {
+  id           String     @id @default(cuid())
+  spinResultId String
+  itemId       String
+
+  spinResult SpinResult @relation(fields: [spinResultId], references: [id], onDelete: Cascade)
+  item       Item       @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([spinResultId, itemId])
+  @@index([spinResultId])
+  @@index([itemId])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

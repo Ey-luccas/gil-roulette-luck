@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" fill="none">
+  <defs>
+    <linearGradient id="bg2" x1="80" y1="20" x2="760" y2="980" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7F1D8"/>
+      <stop offset="1" stop-color="#57B686"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg2)"/>
+  <rect x="120" y="100" width="560" height="790" rx="34" fill="#F3FFF5" fill-opacity="0.9"/>
+  <path d="M270 210H530L490 430H310L270 210Z" fill="#1E8D60"/>
+  <path d="M320 430H410V820H280L320 430Z" fill="#2FA772"/>
+  <path d="M390 430H480L520 820H390V430Z" fill="#2FA772"/>
+  <text x="400" y="860" text-anchor="middle" fill="#166244" font-size="50" font-family="Arial, sans-serif" font-weight="700">Legging Urban Move</text>
+</svg>

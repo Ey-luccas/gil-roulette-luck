@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" fill="none">
+  <defs>
+    <linearGradient id="bg4" x1="80" y1="30" x2="760" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3EBFF"/>
+      <stop offset="1" stop-color="#A985F7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg4)"/>
+  <rect x="120" y="110" width="560" height="780" rx="34" fill="#FBF9FF" fill-opacity="0.9"/>
+  <path d="M270 240H530L500 420H300L270 240Z" fill="#7B56D8"/>
+  <path d="M305 420H410V700H250L305 420Z" fill="#8E67E3"/>
+  <path d="M390 420H495L550 700H390V420Z" fill="#8E67E3"/>
+  <text x="400" y="840" text-anchor="middle" fill="#5C38B0" font-size="50" font-family="Arial, sans-serif" font-weight="700">Short Sculpt Fit</text>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" fill="none">
+  <defs>
+    <linearGradient id="bg3" x1="90" y1="50" x2="740" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE8F4"/>
+      <stop offset="1" stop-color="#FF78B6"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg3)"/>
+  <rect x="115" y="96" width="570" height="810" rx="34" fill="#FFF7FC" fill-opacity="0.9"/>
+  <path d="M265 310C280 250 340 220 400 220C460 220 520 250 535 310L590 720H490L460 430H340L310 720H210L265 310Z" fill="#F3529A"/>
+  <rect x="382" y="430" width="36" height="290" fill="#DF2A7F"/>
+  <text x="400" y="860" text-anchor="middle" fill="#9F1D5B" font-size="50" font-family="Arial, sans-serif" font-weight="700">Jaqueta Light Run</text>
+</svg>

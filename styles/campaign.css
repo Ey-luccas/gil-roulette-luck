@@ -1,0 +1,73 @@
+:root {
+  --campaign-card-glow: 0 24px 56px -34px color-mix(in oklch, var(--accent) 56%, transparent);
+  --campaign-card-soft: 0 12px 30px -20px color-mix(in oklch, var(--foreground) 16%, transparent);
+}
+
+@layer components {
+  .campaign-shell {
+    @apply mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 sm:py-10 lg:px-8;
+  }
+
+  .campaign-header {
+    @apply space-y-3;
+  }
+
+  .campaign-kicker {
+    @apply text-[11px] font-semibold tracking-[0.22em] text-primary uppercase;
+  }
+
+  .campaign-title {
+    @apply text-balance text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl;
+  }
+
+  .campaign-description {
+    @apply max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base;
+  }
+
+  .campaign-panel {
+    @apply relative overflow-hidden rounded-3xl border border-primary/16 bg-card/96 backdrop-blur-sm;
+    box-shadow: var(--campaign-card-glow), var(--campaign-card-soft);
+  }
+
+  .campaign-panel-muted {
+    @apply relative overflow-hidden rounded-3xl border border-border/80 bg-card/90;
+    box-shadow: var(--campaign-card-soft);
+  }
+
+  .campaign-card {
+    @apply overflow-hidden rounded-2xl border border-primary/14 bg-card/96;
+    box-shadow: var(--campaign-card-soft);
+  }
+
+  .campaign-highlight {
+    @apply rounded-2xl border border-accent/55 bg-gradient-to-r from-secondary/85 via-accent/65 to-secondary/85;
+  }
+
+  .campaign-cta {
+    @apply inline-flex h-12 items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition duration-300 hover:-translate-y-0.5 hover:opacity-95 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40;
+  }
+
+  .campaign-cta-outline {
+    @apply inline-flex h-12 items-center justify-center rounded-xl border border-primary/30 bg-background px-6 text-sm font-semibold text-foreground transition duration-300 hover:-translate-y-0.5 hover:bg-primary/8 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
+  }
+
+  .campaign-chip {
+    @apply inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold tracking-[0.1em] text-primary uppercase;
+  }
+
+  .campaign-status-info {
+    @apply rounded-xl border border-primary/20 bg-primary/8 text-foreground;
+  }
+
+  .campaign-status-success {
+    @apply rounded-xl border border-accent/65 bg-accent/45 text-foreground;
+  }
+
+  .campaign-status-warning {
+    @apply rounded-xl border border-secondary/80 bg-secondary/75 text-foreground;
+  }
+
+  .campaign-status-error {
+    @apply rounded-xl border border-foreground/18 bg-muted/75 text-foreground;
+  }
+}

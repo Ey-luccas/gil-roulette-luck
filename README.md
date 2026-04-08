@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sacola Fitness - GC Conceito
 
-## Getting Started
+Promotional web application for the **Sacola Fitness** campaign, built with:
 
-First, run the development server:
+- Next.js 16 (App Router)
+- TypeScript
+- Tailwind CSS
+- shadcn/ui + Radix UI
+- Framer Motion
+- Prisma ORM (SQLite)
+
+## Campaign Flow
+
+1. The customer registers before spinning.
+2. The system validates participation and allows up to **3 spins per CPF**.
+3. A 3-frame premium showcase animation reveals the selected pieces.
+4. The final offer displays:
+   - 3 selected items
+   - original total
+   - fixed final price (`R$ 150,00`)
+   - savings amount and discount percentage
+5. The **Buy now** CTA opens WhatsApp with a prefilled personalized message.
+
+## Admin Flow
+
+- Password-based admin authentication (signed `httpOnly` cookie session).
+- Item management: create, activate/deactivate, list, and delete.
+- Customer panel:
+  - search by name or CPF
+  - inspect the latest spun looks
+  - mark sale as **Sold**
+- When marked as sold, the selected items are immediately set to inactive and leave the active catalog.
+
+## Requirements
+
+- Node.js 20+
+- npm 10+
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure environment variables:
+
+```bash
+cp .env.example .env
+```
+
+3. Run database migrations and seed data:
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+4. Start development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Available Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `npm run dev`: start development mode
+- `npm run build`: create production build
+- `npm run start`: run production server
+- `npm run lint`: run ESLint
+- `npm run db:generate`: generate Prisma Client
+- `npm run db:migrate`: create/apply Prisma migrations
+- `npm run db:seed`: seed initial data
+- `npm run db:studio`: open Prisma Studio
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+- `DATABASE_URL`: SQLite database connection
+- `ADMIN_PASSWORD`: admin login password
+- `ADMIN_SESSION_SECRET`: signing secret for admin session token
+- `NEXT_PUBLIC_WHATSAPP_NUMBER`: store WhatsApp number used by CTA links
 
-To learn more about Next.js, take a look at the following resources:
+## Routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Public:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `/`: landing page
+- `/participar`: registration form
+- `/giro`: promotional spin experience
+- `/resultado`: offer result and purchase CTA
 
-## Deploy on Vercel
+Admin:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/admin/login`: admin login
+- `/admin/dashboard`: campaign metrics
+- `/admin/clientes`: customer panel
+- `/admin/pecas`: item listing and status management
+- `/admin/pecas/new`: create new item
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```text
+src/
+  app/
+    (public)/
+    admin/
+    api/
+  components/
+    admin/
+    public/
+    shared/
+    ui/
+  hooks/
+  lib/
+  types/
+prisma/
+  schema.prisma
+  migrations/
+```
+
+## Production Notes
+
+- Item upload currently stores files in `public/uploads` (local disk persistence).
+- For serverless/scale deployments, use external object storage (S3, Cloudinary, Supabase Storage, etc.).
+- Replace `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` with strong secrets before production.

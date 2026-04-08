@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" fill="none">
+  <defs>
+    <linearGradient id="bg1" x1="60" y1="40" x2="760" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD89A"/>
+      <stop offset="1" stop-color="#FF8B4A"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg1)"/>
+  <rect x="130" y="120" width="540" height="760" rx="32" fill="#FFF8EE" fill-opacity="0.88"/>
+  <path d="M240 310C240 260 280 220 330 220H470C520 220 560 260 560 310V370H240V310Z" fill="#FF7A3D"/>
+  <path d="M275 410H525V690C525 739.7 484.7 780 435 780H365C315.3 780 275 739.7 275 690V410Z" fill="#F25E2C"/>
+  <text x="400" y="850" text-anchor="middle" fill="#7D2E11" font-size="52" font-family="Arial, sans-serif" font-weight="700">Top Energy Pulse</text>
+</svg>
