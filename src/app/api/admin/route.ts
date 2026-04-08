@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { clearAdminSession, getAdminSession, setAdminSession, verifyAdminCredentials } from "@/lib/auth";
@@ -28,13 +29,20 @@ export async function GET() {
     );
   }
 
-  const [totalItems, activeItems, totalParticipants, totalSpins, soldSpins] = await prisma.$transaction([
+  const [totalItems, activeItems, totalParticipants, totalSpins] = await prisma.$transaction([
     prisma.item.count(),
     prisma.item.count({ where: { isActive: true } }),
     prisma.participant.count(),
     prisma.spinResult.count(),
-    prisma.spinResult.count({ where: { isSold: true } }),
   ]);
+
+  const soldSpins = await prisma.spinResult.count({ where: { isSold: true } }).catch((error) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+      return 0;
+    }
+
+    throw error;
+  });
 
   return NextResponse.json({
     ok: true,

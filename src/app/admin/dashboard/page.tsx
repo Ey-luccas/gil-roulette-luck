@@ -5,19 +5,27 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const session = await requireAdminSession();
 
-  const [totalItems, activeItems, totalParticipants, totalSpins, soldSpins] = await prisma.$transaction([
+  const [totalItems, activeItems, totalParticipants, totalSpins] = await prisma.$transaction([
     prisma.item.count(),
     prisma.item.count({ where: { isActive: true } }),
     prisma.participant.count(),
     prisma.spinResult.count(),
-    prisma.spinResult.count({ where: { isSold: true } }),
   ]);
+
+  const soldSpins = await prisma.spinResult.count({ where: { isSold: true } }).catch((error) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+      return 0;
+    }
+
+    throw error;
+  });
 
   return (
     <CampaignShell>

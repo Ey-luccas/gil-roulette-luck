@@ -5,6 +5,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { requireAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { AdminCustomerRow } from "@/types/admin";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,48 @@ export default async function AdminClientesPage() {
         },
       },
     },
+  }).catch(async (error) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+      return prisma.participant.findMany({
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          cpf: true,
+          spinAttempts: true,
+          createdAt: true,
+          spinResults: {
+            orderBy: [{ attemptNumber: "desc" }, { createdAt: "desc" }],
+            take: 1,
+            select: {
+              id: true,
+              attemptNumber: true,
+              finalPrice: true,
+              originalTotal: true,
+              discountAmount: true,
+              discountPercent: true,
+              createdAt: true,
+              items: {
+                select: {
+                  item: {
+                    select: {
+                      id: true,
+                      name: true,
+                      imageUrl: true,
+                      originalPrice: true,
+                      isActive: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    throw error;
   });
 
   const customers: AdminCustomerRow[] = participants.map((participant) => {
@@ -74,8 +117,13 @@ export default async function AdminClientesPage() {
             discountAmount: toNumber(latestSpin.discountAmount),
             discountPercent: toNumber(latestSpin.discountPercent),
             createdAt: latestSpin.createdAt.toISOString(),
-            isSold: latestSpin.isSold,
-            soldAt: latestSpin.soldAt?.toISOString() ?? null,
+            isSold: "isSold" in latestSpin ? Boolean(latestSpin.isSold) : false,
+            soldAt:
+              "soldAt" in latestSpin
+                ? latestSpin.soldAt
+                  ? latestSpin.soldAt.toISOString()
+                  : null
+                : null,
             items: latestSpin.items.map((entry) => ({
               id: entry.item.id,
               name: entry.item.name,

@@ -117,7 +117,10 @@ export async function DELETE(_request: Request, context: ItemRouteContext) {
       where: { id: itemId },
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2003" || error.code === "P2014")
+    ) {
       return NextResponse.json(
         {
           ok: false,

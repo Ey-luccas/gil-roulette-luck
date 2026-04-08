@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { getAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -58,14 +59,20 @@ export async function PATCH(_request: Request, context: CustomerSoldRouteContext
         },
       },
     },
+  }).catch((error) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+      return null;
+    }
+
+    throw error;
   });
 
   if (!participant) {
     return NextResponse.json(
       {
         ok: false,
-        code: "PARTICIPANT_NOT_FOUND",
-        error: "Cliente não encontrado.",
+        code: "PARTICIPANT_NOT_FOUND_OR_DB_OUTDATED",
+        error: "Cliente não encontrado ou banco não atualizado para confirmar vendas.",
       },
       { status: 404 }
     );
@@ -101,31 +108,39 @@ export async function PATCH(_request: Request, context: CustomerSoldRouteContext
 
   const soldAt = new Date();
 
-  const { deactivatedItemsCount } = await prisma.$transaction(async (transaction) => {
-    await transaction.spinResult.update({
-      where: { id: latestSpin.id },
-      data: {
-        isSold: true,
-        soldAt,
-      },
+  const { deactivatedItemsCount } = await prisma
+    .$transaction(async (transaction) => {
+      await transaction.spinResult.update({
+        where: { id: latestSpin.id },
+        data: {
+          isSold: true,
+          soldAt,
+        },
+      });
+
+      if (relatedItemIds.length === 0) {
+        return { deactivatedItemsCount: 0 };
+      }
+
+      const deactivatedItems = await transaction.item.updateMany({
+        where: {
+          id: { in: relatedItemIds },
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
+      return { deactivatedItemsCount: deactivatedItems.count };
+    })
+    .catch((error) => {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+        return { deactivatedItemsCount: 0 };
+      }
+
+      throw error;
     });
-
-    if (relatedItemIds.length === 0) {
-      return { deactivatedItemsCount: 0 };
-    }
-
-    const deactivatedItems = await transaction.item.updateMany({
-      where: {
-        id: { in: relatedItemIds },
-        isActive: true,
-      },
-      data: {
-        isActive: false,
-      },
-    });
-
-    return { deactivatedItemsCount: deactivatedItems.count };
-  });
 
   return NextResponse.json({
     ok: true,
