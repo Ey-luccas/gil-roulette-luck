@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,6 +25,8 @@ model Item {
   id            String           @id @default(cuid())
   name          String
   imageUrl      String
+  imageData     Bytes?           @db.LongBlob
+  imageMimeType String?
   originalPrice Decimal
   isActive      Boolean          @default(true)
   createdAt     DateTime         @default(now())

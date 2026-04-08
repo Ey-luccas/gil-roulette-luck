@@ -54,11 +54,8 @@ export default async function GiroPage({ searchParams }: GiroPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 px-5 pb-5 text-sm text-muted-foreground sm:px-6 sm:pb-6">
-            <p>Ainda não temos peças ativas suficientes para iniciar o giro.</p>
-            <p>
-              Cadastre ao menos {SACOLA_ITEM_COUNT} peças no painel administrativo e tente
-              novamente.
-            </p>
+            <p>Estamos preparando sua vitrine com carinho para liberar o giro.</p>
+            <p>Volte em instantes para descobrir sua Sacola Fitness promocional.</p>
           </CardContent>
         </Card>
       )}

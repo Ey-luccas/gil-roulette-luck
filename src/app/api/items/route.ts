@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -8,10 +6,16 @@ import { getAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+]);
 
 const createItemSchema = z.object({
   name: z.string().trim().min(2, "Nome inválido."),
-  imageUrl: z.string().trim().min(1, "Imagem inválida."),
+  imageUrl: z.string().trim().optional().default(""),
   originalPrice: z.number().positive("Preço inválido."),
   isActive: z.boolean().optional(),
 });
@@ -45,7 +49,12 @@ function parseBoolean(value: unknown, fallback = true) {
   return fallback;
 }
 
-async function saveUploadedImage(file: File) {
+type UploadedImagePayload = {
+  data: Buffer;
+  mimeType: string;
+};
+
+async function readUploadedImage(file: File): Promise<UploadedImagePayload> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Arquivo de imagem inválido.");
   }
@@ -54,23 +63,16 @@ async function saveUploadedImage(file: File) {
     throw new Error("Imagem muito grande. Limite de 5MB.");
   }
 
-  const mimeToExt: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
-    "image/avif": ".avif",
-  };
+  if (!ACCEPTED_IMAGE_MIME_TYPES.has(file.type)) {
+    throw new Error("Formato inválido. Use JPG, PNG, WEBP ou AVIF.");
+  }
 
-  const extension = mimeToExt[file.type] ?? (path.extname(file.name || "").toLowerCase() || ".jpg");
-  const filename = `${randomUUID()}${extension}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "items");
-  const targetPath = path.join(uploadDir, filename);
-
-  await mkdir(uploadDir, { recursive: true });
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(targetPath, buffer);
 
-  return `/uploads/items/${filename}`;
+  return {
+    data: buffer,
+    mimeType: file.type,
+  };
 }
 
 function unauthorizedResponse() {
@@ -135,6 +137,7 @@ export async function POST(request: Request) {
         isActive?: boolean;
       }
     | null = null;
+  let uploadedImage: UploadedImagePayload | null = null;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
@@ -144,11 +147,11 @@ export async function POST(request: Request) {
     const imageField = formData.get("image");
     const imageUrlField = String(formData.get("imageUrl") ?? "").trim();
 
-    let imageUrl = imageUrlField;
+    const imageUrl = imageUrlField;
 
     if (imageField instanceof File && imageField.size > 0) {
       try {
-        imageUrl = await saveUploadedImage(imageField);
+        uploadedImage = await readUploadedImage(imageField);
       } catch (error) {
         return NextResponse.json(
           {
@@ -191,10 +194,29 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!uploadedImage && !parsedBody.data.imageUrl) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "INVALID_INPUT",
+        error: "Envie uma imagem da peça ou uma URL válida.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const itemId = randomUUID();
+  const imageUrl = uploadedImage
+    ? `/api/items/${encodeURIComponent(itemId)}/image`
+    : parsedBody.data.imageUrl;
+
   const createdItem = await prisma.item.create({
     data: {
+      id: itemId,
       name: parsedBody.data.name,
-      imageUrl: parsedBody.data.imageUrl,
+      imageUrl,
+      imageData: uploadedImage?.data,
+      imageMimeType: uploadedImage?.mimeType,
       originalPrice: parsedBody.data.originalPrice,
       isActive: parsedBody.data.isActive ?? true,
     },

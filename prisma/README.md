@@ -1,5 +1,11 @@
 # Prisma Setup
 
+This project uses **MySQL** as the Prisma datasource.
+
+Uploaded item images are stored directly in the `Item` table:
+- `imageData` (`LONGBLOB`)
+- `imageMimeType`
+
 ## 1) Generate client
 
 ```bash
@@ -12,7 +18,7 @@ npm run db:generate
 npm run db:migrate -- --name init_campaign_models
 ```
 
-If Prisma asks to reset local SQLite because of old tables, confirm reset in development.
+If your schema changed and Prisma asks to reset the local development database, confirm reset only in development.
 
 ## 3) Seed data (optional)
 

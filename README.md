@@ -7,7 +7,7 @@ Promotional web application for the **Sacola Fitness** campaign, built with:
 - Tailwind CSS
 - shadcn/ui + Radix UI
 - Framer Motion
-- Prisma ORM (SQLite)
+- Prisma ORM (MySQL)
 
 ## Campaign Flow
 
@@ -25,6 +25,7 @@ Promotional web application for the **Sacola Fitness** campaign, built with:
 
 - Password-based admin authentication (signed `httpOnly` cookie session).
 - Item management: create, activate/deactivate, list, and delete.
+- Item uploads are stored directly in the database (MySQL `LONGBLOB`) and served by `/api/items/[itemId]/image`.
 - Customer panel:
   - search by name or CPF
   - inspect the latest spun looks
@@ -50,17 +51,35 @@ npm install
 cp .env.example .env
 ```
 
-3. Run database migrations and seed data:
+3. Configure your MySQL connection in `.env`:
+
+```env
+DATABASE_URL="mysql://root:password@localhost:3306/sacola_fitness"
+```
+
+4. Run database migrations and seed data:
 
 ```bash
 npm run db:migrate
 npm run db:seed
 ```
 
-4. Start development server:
+5. Start development server:
 
 ```bash
 npm run dev
+```
+
+## Migration Note (SQLite -> MySQL)
+
+The project is now configured for MySQL. SQLite migrations were replaced by a MySQL baseline migration:
+
+- `prisma/migrations/20260408180000_mysql_init`
+
+To apply it on your MySQL server:
+
+```bash
+npm run db:migrate
 ```
 
 ## Available Scripts
@@ -76,7 +95,7 @@ npm run dev
 
 ## Environment Variables
 
-- `DATABASE_URL`: SQLite database connection
+- `DATABASE_URL`: MySQL database connection string
 - `ADMIN_PASSWORD`: admin login password
 - `ADMIN_SESSION_SECRET`: signing secret for admin session token
 - `NEXT_PUBLIC_WHATSAPP_NUMBER`: store WhatsApp number used by CTA links
@@ -121,6 +140,6 @@ prisma/
 
 ## Production Notes
 
-- Item upload currently stores files in `public/uploads` (local disk persistence).
-- For serverless/scale deployments, use external object storage (S3, Cloudinary, Supabase Storage, etc.).
+- Item upload is persisted in MySQL (`Item.imageData`), so no local disk dependency for catalog images.
 - Replace `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` with strong secrets before production.
+- Ensure your production MySQL database is reachable before running `npm run db:migrate`.
