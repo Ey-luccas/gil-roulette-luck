@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -53,6 +56,35 @@ type UploadedImagePayload = {
   data: Buffer;
   mimeType: string;
 };
+
+function getImageExtensionByMimeType(mimeType: string) {
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/avif": ".avif",
+  };
+
+  return mimeToExt[mimeType] ?? ".jpg";
+}
+
+async function saveImageBufferToLocalUpload({
+  buffer,
+  mimeType,
+}: {
+  buffer: Buffer;
+  mimeType: string;
+}) {
+  const extension = getImageExtensionByMimeType(mimeType);
+  const filename = `${randomUUID()}${extension}`;
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "items");
+  const targetPath = path.join(uploadDir, filename);
+
+  await mkdir(uploadDir, { recursive: true });
+  await writeFile(targetPath, buffer);
+
+  return `/uploads/items/${filename}`;
+}
 
 async function readUploadedImage(file: File): Promise<UploadedImagePayload> {
   if (!file.type.startsWith("image/")) {
@@ -211,25 +243,94 @@ export async function POST(request: Request) {
     ? `/api/items/${encodeURIComponent(itemId)}/image`
     : parsedBody.data.imageUrl;
 
-  const createdItem = await prisma.item.create({
-    data: {
-      id: itemId,
-      name: parsedBody.data.name,
-      imageUrl,
-      imageData: uploadedImage?.data,
-      imageMimeType: uploadedImage?.mimeType,
-      originalPrice: parsedBody.data.originalPrice,
-      isActive: parsedBody.data.isActive ?? true,
-    },
-    select: {
-      id: true,
-      name: true,
-      imageUrl: true,
-      originalPrice: true,
-      isActive: true,
-      createdAt: true,
-    },
-  });
+  const baseData = {
+    id: itemId,
+    name: parsedBody.data.name,
+    originalPrice: parsedBody.data.originalPrice,
+    isActive: parsedBody.data.isActive ?? true,
+  };
+
+  let createdItem:
+    | {
+        id: string;
+        name: string;
+        imageUrl: string;
+        originalPrice: Prisma.Decimal;
+        isActive: boolean;
+        createdAt: Date;
+      }
+    | undefined;
+
+  if (uploadedImage) {
+    try {
+      createdItem = await prisma.item.create({
+        data: {
+          ...baseData,
+          imageUrl,
+          imageData: uploadedImage.data,
+          imageMimeType: uploadedImage.mimeType,
+        },
+        select: {
+          id: true,
+          name: true,
+          imageUrl: true,
+          originalPrice: true,
+          isActive: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+        const legacyImageUrl = await saveImageBufferToLocalUpload({
+          buffer: uploadedImage.data,
+          mimeType: uploadedImage.mimeType,
+        });
+
+        createdItem = await prisma.item.create({
+          data: {
+            ...baseData,
+            imageUrl: legacyImageUrl,
+          },
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            originalPrice: true,
+            isActive: true,
+            createdAt: true,
+          },
+        });
+      } else {
+        throw error;
+      }
+    }
+  } else {
+    createdItem = await prisma.item.create({
+      data: {
+        ...baseData,
+        imageUrl,
+      },
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        originalPrice: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  if (!createdItem) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "ITEM_NOT_CREATED",
+        error: "Não foi possível cadastrar a peça.",
+      },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json(
     {

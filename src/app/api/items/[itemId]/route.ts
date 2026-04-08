@@ -113,9 +113,20 @@ export async function DELETE(_request: Request, context: ItemRouteContext) {
   }
 
   try {
-    await prisma.item.delete({
+    const deletedResult = await prisma.item.deleteMany({
       where: { id: itemId },
     });
+
+    if (deletedResult.count !== 1) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "ITEM_NOT_FOUND",
+          error: "Peça não encontrada.",
+        },
+        { status: 404 }
+      );
+    }
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
