@@ -111,7 +111,10 @@ export default async function ResultadoPage({ searchParams }: ResultadoPageProps
     redirect("/participar");
   }
 
-  const selectedItems = spinResult.items.map((entry) => entry.item);
+  const selectedItems = spinResult.items.map((entry) => ({
+    ...entry.item,
+    imageUrl: `/api/items/${encodeURIComponent(entry.item.id)}/image`,
+  }));
   if (selectedItems.length !== SACOLA_ITEM_COUNT) {
     redirect("/participar");
   }
@@ -173,6 +176,7 @@ export default async function ResultadoPage({ searchParams }: ResultadoPageProps
                   src={item.imageUrl}
                   alt={item.name}
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 33vw"
                 />

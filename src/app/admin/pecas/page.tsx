@@ -25,7 +25,7 @@ export default async function AdminPecasPage() {
   const listItems = items.map((item) => ({
     id: item.id,
     name: item.name,
-    imageUrl: item.imageUrl,
+    imageUrl: `/api/items/${encodeURIComponent(item.id)}/image`,
     originalPrice: Number(item.originalPrice.toString()),
     isActive: item.isActive,
     createdAt: item.createdAt.toISOString(),

@@ -362,6 +362,7 @@ export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps
                                         src={item.imageUrl}
                                         alt={item.name}
                                         fill
+                                        unoptimized
                                         className="object-cover"
                                         sizes="(max-width: 768px) 100vw, 20vw"
                                       />

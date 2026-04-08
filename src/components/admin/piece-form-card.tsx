@@ -241,7 +241,7 @@ export function PieceFormCard() {
               <div className="sm:col-span-2">
                 <p className="mb-2 text-sm font-medium">Pré-visualização</p>
                 <div className="relative h-56 w-full overflow-hidden rounded-xl border border-border bg-muted sm:w-72">
-                  <Image src={previewUrl} alt="Prévia da peça" fill className="object-cover" />
+                  <Image src={previewUrl} alt="Prévia da peça" fill unoptimized className="object-cover" />
                 </div>
               </div>
             ) : null}

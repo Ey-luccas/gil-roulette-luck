@@ -178,6 +178,7 @@ export function SpinPreview({ participantId }: SpinPreviewProps) {
                       src={frame.item.imageUrl}
                       alt={frame.item.name}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="(max-width: 768px) 33vw, 25vw"
                     />

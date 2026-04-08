@@ -49,6 +49,7 @@ export function ThreeFrameShowcase({
                   src={frame.item.imageUrl}
                   alt={frame.item.name}
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="(max-width: 768px) 33vw, 28vw"
                 />

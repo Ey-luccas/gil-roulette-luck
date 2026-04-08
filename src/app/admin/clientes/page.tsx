@@ -79,7 +79,7 @@ export default async function AdminClientesPage() {
             items: latestSpin.items.map((entry) => ({
               id: entry.item.id,
               name: entry.item.name,
-              imageUrl: entry.item.imageUrl,
+              imageUrl: `/api/items/${encodeURIComponent(entry.item.id)}/image`,
               originalPrice: toNumber(entry.item.originalPrice),
               isActive: entry.item.isActive,
             })),

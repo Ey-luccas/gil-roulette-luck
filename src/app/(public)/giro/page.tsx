@@ -30,7 +30,7 @@ export default async function GiroPage({ searchParams }: GiroPageProps) {
   const items = activeItems.map((item) => ({
     id: item.id,
     name: item.name,
-    imageUrl: item.imageUrl,
+    imageUrl: `/api/items/${encodeURIComponent(item.id)}/image`,
     originalPrice: Number(item.originalPrice.toString()),
   }));
 

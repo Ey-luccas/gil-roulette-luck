@@ -115,6 +115,7 @@ export async function GET(request: Request) {
     data: {
       items: items.map((item) => ({
         ...item,
+        imageUrl: `/api/items/${encodeURIComponent(item.id)}/image`,
         originalPrice: toNumber(item.originalPrice),
       })),
     },

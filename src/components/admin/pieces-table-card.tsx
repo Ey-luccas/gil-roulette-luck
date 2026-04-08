@@ -200,6 +200,7 @@ export function PiecesTableCard({ initialItems }: PiecesTableCardProps) {
                               src={item.imageUrl}
                               alt={item.name}
                               fill
+                              unoptimized
                               className="object-cover"
                               sizes="48px"
                             />
