@@ -116,7 +116,7 @@ export function SpinPreview({ participantId }: SpinPreviewProps) {
   }, []);
 
   const statusText = useMemo(() => {
-    if (revealed) return "Sacola Fitness desbloqueada com sucesso.";
+    if (revealed) return "Resultado da campanha revelado com sucesso.";
     if (currentStep < 4) return "Lendo seu perfil e avaliando estilos.";
     if (currentStep < 8) return "Comparando combinações da vitrine inteligente.";
     return "Finalizando seleção promocional exclusiva.";

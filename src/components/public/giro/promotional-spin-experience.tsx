@@ -76,7 +76,7 @@ export function PromotionalSpinExperience({
 
       submittedCycleRef.current = cycle;
       setPersistState("saving");
-      setPersistMessage("Registrando resultado da sua sacola...");
+      setPersistMessage("Registrando resultado da sua campanha...");
 
       try {
         const response = await fetch("/api/spin", {

@@ -69,8 +69,8 @@ export function HowItWorksCtaPopup({ targetId }: HowItWorksCtaPopupProps) {
             </button>
 
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Pronto para descobrir sua seleção? Entre agora na campanha e desbloqueie sua oferta
-              promocional.
+              Pronta para seus Presentes do 5.5? Preencha seus dados e gire a roleta para ver seu
+              resultado na hora.
             </p>
 
             <Link href="/participar" className="campaign-cta h-10 w-full rounded-lg">

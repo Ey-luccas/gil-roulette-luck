@@ -20,7 +20,7 @@ export function ResultBreakdown() {
         </div>
 
         <div>
-          <p className="text-sm text-muted-foreground">Valor final da sacola</p>
+          <p className="text-sm text-muted-foreground">Valor final da campanha</p>
           <p className="text-xl font-bold text-primary">{formatBRL(summary.finalPrice)}</p>
         </div>
 

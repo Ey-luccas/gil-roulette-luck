@@ -9,7 +9,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }>) {
   const GC_WHATSAPP_URL = buildWhatsAppUrl(
-    "Olá, vim pela campanha Sacola Fitness e quero atendimento."
+    "Olá, vim pela campanha Presentes do 5.5 e quero atendimento."
   );
 
   return (

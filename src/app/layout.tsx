@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 
-import { SACOLA_FINAL_PRICE, SACOLA_ITEM_COUNT, formatBRL } from "@/lib/pricing";
+import { PRESENTES_CAMPAIGN_NAME } from "@/lib/presentes-campaign";
 
 import "./globals.css";
 
@@ -16,9 +16,9 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Sacola Fitness | GC Conceito",
+  title: `${PRESENTES_CAMPAIGN_NAME} | GC Conceito`,
   description:
-    `Campanha promocional Sacola Fitness: gire e descubra ${SACOLA_ITEM_COUNT} peças com valor fixo de ${formatBRL(SACOLA_FINAL_PRICE)}.`,
+    "Participe da campanha Presentes do 5.5: preencha seus dados, gire a roleta e descubra seu presente especial com até 3 chances por CPF.",
 };
 
 export default function RootLayout({

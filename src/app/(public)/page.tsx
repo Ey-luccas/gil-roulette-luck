@@ -1,12 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Shirt, Sparkles, TicketPercent } from "lucide-react";
+import { ArrowRight, Gift, RotateCw, Send, TicketPercent } from "lucide-react";
 
 import { HowItWorksCtaPopup } from "@/components/public/how-it-works-cta-popup";
 import { CampaignShell } from "@/components/shared/campaign-shell";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { MAX_SPIN_ATTEMPTS_PER_CPF } from "@/lib/campaign-rules";
-import { SACOLA_FINAL_PRICE, SACOLA_ITEM_COUNT, formatBRL } from "@/lib/pricing";
 
 export default function PublicHomePage() {
   return (
@@ -18,24 +17,21 @@ export default function PublicHomePage() {
         <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
           <div className="space-y-5">
             <h1 className="text-balance text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              Descubra sua <span className="text-primary">Sacola Fitness</span> e leve mais por
-              menos.
+              Gire a roleta dos <span className="text-primary">Presentes do 5.5</span>
             </h1>
             <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Participe agora, veja seu desconto ao vivo e tente até{" "}
-              {MAX_SPIN_ATTEMPTS_PER_CPF} vezes para encontrar sua Sacola Fitness perfeita.
+              Preencha seus dados, gire a roleta e descubra seu presente especial da GC Conceito.
+              São até {MAX_SPIN_ATTEMPTS_PER_CPF} chances por CPF.
             </p>
 
             <div className="campaign-highlight inline-flex items-center gap-2 px-4 py-3">
               <TicketPercent className="h-4 w-4 text-primary" />
-              <p className="text-sm font-bold tracking-wide sm:text-base">
-                {SACOLA_ITEM_COUNT} roupas por {formatBRL(SACOLA_FINAL_PRICE)}
-              </p>
+              <p className="text-sm font-bold tracking-wide sm:text-base">3 chances por CPF</p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <Link href="/participar" className="campaign-cta gap-2">
-                Quero participar
+                Participar agora
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -45,10 +41,10 @@ export default function PublicHomePage() {
             <div className="relative h-full w-full">
               <Image
                 src="/f8abb0ed-14af-4b79-81f7-2869a90f371c.png"
-                alt="Destaque feminino da campanha Sacola Fitness"
+                alt="Elementos da campanha Presentes do 5.5 com roleta, presentes, cupom e confete"
                 fill
                 priority
-                className="object-contain object-center scale-[1.04] sm:scale-[1.08]"
+                className="object-contain object-center scale-[1.02] sm:scale-[1.06]"
                 sizes="(max-width: 1024px) 100vw, 42vw"
               />
             </div>
@@ -60,37 +56,37 @@ export default function PublicHomePage() {
         <SectionHeading
           kicker="Como funciona"
           title="Simples, rápido e transparente"
-          description="É rápido: faça seu cadastro, veja sua sacola e aproveite o preço promocional."
+          description="Cadastre-se, gire a roleta e veja seu presente na hora."
         />
 
         <div className="grid gap-4 md:grid-cols-3">
           <article className="campaign-card p-5">
             <p className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <Shirt className="h-4 w-4" />
+              <Gift className="h-4 w-4" />
             </p>
-            <h3 className="mt-3 text-lg font-bold">1. Preencha seus dados</h3>
+            <h3 className="mt-3 text-lg font-bold">Preencha seus dados</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Digite seus dados e ative até {MAX_SPIN_ATTEMPTS_PER_CPF} chances na promoção.
+              Informe nome, WhatsApp e CPF para participar da campanha.
             </p>
           </article>
 
           <article className="campaign-card p-5">
             <p className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <Sparkles className="h-4 w-4" />
+              <RotateCw className="h-4 w-4" />
             </p>
-            <h3 className="mt-3 text-lg font-bold">2. Veja sua sacola</h3>
+            <h3 className="mt-3 text-lg font-bold">Gire a roleta</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              A vitrine escolhe as peças e mostra sua oferta em poucos segundos.
+              Cada CPF tem até {MAX_SPIN_ATTEMPTS_PER_CPF} chances para descobrir seus presentes.
             </p>
           </article>
 
           <article className="campaign-card p-5">
             <p className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <TicketPercent className="h-4 w-4" />
+              <Send className="h-4 w-4" />
             </p>
-            <h3 className="mt-3 text-lg font-bold">3. Garanta sua oferta</h3>
+            <h3 className="mt-3 text-lg font-bold">Resgate pelo WhatsApp</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Confira sua economia e finalize pelo canal de pagamento.
+              Após o giro, envie seu resultado para a equipe da GC Conceito e finalize seu resgate.
             </p>
           </article>
         </div>
@@ -100,25 +96,20 @@ export default function PublicHomePage() {
             <div className="relative z-10 flex flex-col gap-4 px-5 py-6 sm:px-7 sm:py-7">
               <div className="space-y-2">
                 <p className="inline-flex w-fit rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
-                  Desconto extra
+                  Campanha 5.5
                 </p>
                 <h3 className="text-2xl font-black tracking-tight sm:text-3xl">
-                  Quer outros looks além da oferta?
+                  Presentes limitados enquanto durar o estoque
                 </h3>
                 <p className="max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
-                  Acesse o site da GC Conceito e ganhe 10% OFF na primeira compra com o cupom{" "}
-                  <span className="font-bold text-white">#sounovoaqui</span>.
+                  Faça seu cadastro, gire a roleta e descubra condições e presentes especiais da GC
+                  Conceito durante a campanha.
                 </p>
               </div>
 
-              <a
-                href="https://www.gcconceito.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-white/35 bg-white px-5 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:bg-white/90 sm:w-fit"
-              >
-                Acessar site da GC Conceito
-              </a>
+              <Link href="/participar" className="campaign-cta h-11 w-full sm:w-fit">
+                Participar agora
+              </Link>
             </div>
 
             <div className="relative hidden min-h-[250px] md:block">
@@ -134,7 +125,6 @@ export default function PublicHomePage() {
             </div>
           </div>
         </div>
-
       </section>
 
       <HowItWorksCtaPopup targetId="como-funciona-section" />

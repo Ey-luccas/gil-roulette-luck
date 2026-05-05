@@ -1,9 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sparkles, Tag } from "lucide-react";
+import { ArrowRight, Gift, RotateCw, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { MAX_SPIN_ATTEMPTS_PER_CPF } from "@/lib/campaign-rules";
-import { SACOLA_FINAL_PRICE, SACOLA_ITEM_COUNT, formatBRL } from "@/lib/pricing";
 
 export function CampaignHero() {
   return (
@@ -16,23 +16,18 @@ export function CampaignHero() {
           <Badge className="bg-primary text-primary-foreground">Campanha promocional exclusiva</Badge>
 
           <h2 className="max-w-2xl text-balance text-4xl leading-tight font-black tracking-tight sm:text-5xl lg:text-6xl">
-            Seu look fitness premium por{" "}
-            <span className="text-primary">{formatBRL(SACOLA_FINAL_PRICE)}</span>.
+            Gire a roleta dos <span className="text-primary">Presentes do 5.5</span>
           </h2>
 
           <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Participe da vitrine inteligente, revele {SACOLA_ITEM_COUNT} peças e aproveite uma
-            oferta com estética de coleção especial da GC Conceito.
+            Preencha seus dados, gire a roleta e descubra seu presente especial com até 3 chances
+            por CPF.
           </p>
 
           <div className="flex flex-wrap gap-3">
             <Link href="/participar" className="campaign-cta gap-2">
-              Quero minha sacola
+              Participar agora
               <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <Link href="/admin/login" className="campaign-cta-outline">
-              Área administrativa
             </Link>
           </div>
         </div>
@@ -40,21 +35,21 @@ export function CampaignHero() {
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
           <article className="campaign-card p-4">
             <p className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <Sparkles className="h-4 w-4" />
+              <Gift className="h-4 w-4" />
             </p>
-            <h3 className="mt-3 text-sm font-semibold">Revelação com suspense</h3>
+            <h3 className="mt-3 text-sm font-semibold">Prêmios especiais</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Animação em 3 quadros com ritmo premium e conclusão objetiva.
+              Roleta com presentes, vouchers e cupons da campanha 5.5.
             </p>
           </article>
 
           <article className="campaign-card p-4">
             <p className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <Tag className="h-4 w-4" />
+              <RotateCw className="h-4 w-4" />
             </p>
-            <h3 className="mt-3 text-sm font-semibold">Preço fixo especial</h3>
+            <h3 className="mt-3 text-sm font-semibold">Resultado imediato</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Oferta fechada da campanha com cálculo de economia automático.
+              Cada giro gera um único resultado e salva o histórico do CPF.
             </p>
           </article>
 
@@ -64,11 +59,19 @@ export function CampaignHero() {
             </p>
             <h3 className="mt-3 text-sm font-semibold">Controle por CPF</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Até {MAX_SPIN_ATTEMPTS_PER_CPF} tentativas com validação segura e experiência
-              confiável.
+              Até {MAX_SPIN_ATTEMPTS_PER_CPF} tentativas por CPF com validação segura.
             </p>
           </article>
         </div>
+      </div>
+
+      <div className="pointer-events-none absolute right-8 bottom-8 hidden h-[190px] w-[190px] lg:block">
+        <Image
+          src="/f8abb0ed-14af-4b79-81f7-2869a90f371c.png"
+          alt="Resumo visual da campanha Presentes do 5.5"
+          fill
+          className="object-contain"
+        />
       </div>
     </section>
   );

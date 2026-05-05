@@ -32,7 +32,7 @@ export default async function AdminDashboardPage() {
       <SectionHeading
         kicker="Admin"
         title="Dashboard da campanha"
-        description="Visão geral do catálogo, participantes e giros realizados na Sacola Fitness."
+        description="Visão geral do catálogo, participantes e giros realizados na campanha Presentes do 5.5."
       />
 
       <AdminHeader pathname="/admin/dashboard" username={session.username} />
@@ -56,7 +56,7 @@ export default async function AdminDashboardPage() {
         <AdminMetricCard
           label="Giros registrados"
           value={totalSpins}
-          description="Resultados de sacola já confirmados no banco."
+          description="Resultados da campanha já confirmados no banco."
         />
         <AdminMetricCard
           label="Vendas confirmadas"

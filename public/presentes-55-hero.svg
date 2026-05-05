@@ -1,0 +1,83 @@
+<svg width="980" height="900" viewBox="0 0 980 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="860" y2="820" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9F6EE"/>
+      <stop offset="1" stop-color="#EEE7D7"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#D8B770"/>
+      <stop offset="1" stop-color="#A17A3A"/>
+    </linearGradient>
+    <linearGradient id="dark" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#37312A"/>
+      <stop offset="1" stop-color="#1F1A15"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="980" height="900" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#2D2417" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect x="40" y="34" width="900" height="832" rx="72" fill="url(#bg)"/>
+
+  <g opacity="0.68">
+    <circle cx="138" cy="152" r="9" fill="#D3B373"/>
+    <circle cx="194" cy="112" r="6" fill="#B28B4D"/>
+    <circle cx="790" cy="130" r="10" fill="#CBAA65"/>
+    <circle cx="858" cy="172" r="7" fill="#A27D44"/>
+    <circle cx="840" cy="676" r="8" fill="#D3B373"/>
+    <circle cx="124" cy="702" r="11" fill="#C9A45E"/>
+    <path d="M260 140L270 122L280 140L300 148L280 156L270 174L260 156L240 148L260 140Z" fill="#B58F52"/>
+    <path d="M726 216L734 202L742 216L758 222L742 228L734 242L726 228L710 222L726 216Z" fill="#AD8448"/>
+    <path d="M188 590L196 576L204 590L220 596L204 602L196 616L188 602L172 596L188 590Z" fill="#B18A4A"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <circle cx="502" cy="436" r="246" fill="#FDFBF5" stroke="#D5BC8A" stroke-width="14"/>
+    <circle cx="502" cy="436" r="218" fill="#F3E8D3" stroke="#C4A56A" stroke-width="2"/>
+
+    <path d="M502 436L502 218A218 218 0 0 1 692 322L502 436Z" fill="#E8D5B0"/>
+    <path d="M502 436L692 322A218 218 0 0 1 720 512L502 436Z" fill="#D9BC84"/>
+    <path d="M502 436L720 512A218 218 0 0 1 594 632L502 436Z" fill="#EFE0C0"/>
+    <path d="M502 436L594 632A218 218 0 0 1 410 632L502 436Z" fill="#D1AF71"/>
+    <path d="M502 436L410 632A218 218 0 0 1 282 512L502 436Z" fill="#F4E9D2"/>
+    <path d="M502 436L282 512A218 218 0 0 1 312 322L502 436Z" fill="#C9A262"/>
+    <path d="M502 436L312 322A218 218 0 0 1 502 218L502 436Z" fill="#E4CC9E"/>
+
+    <circle cx="502" cy="436" r="88" fill="#FFF" stroke="#C8A665" stroke-width="8"/>
+    <text x="502" y="420" text-anchor="middle" font-size="26" font-family="Sora, Arial, sans-serif" font-weight="700" fill="#5E4623">Presentes</text>
+    <text x="502" y="472" text-anchor="middle" font-size="64" font-family="Sora, Arial, sans-serif" font-weight="800" fill="#2A231B">5.5</text>
+
+    <path d="M502 170L536 228H468L502 170Z" fill="#2F271E"/>
+  </g>
+
+  <g transform="translate(90 600)">
+    <rect x="0" y="0" width="182" height="132" rx="18" fill="url(#dark)"/>
+    <rect x="74" y="0" width="34" height="132" fill="url(#gold)"/>
+    <rect x="0" y="52" width="182" height="30" fill="url(#gold)"/>
+    <path d="M91 -20C67 -20 52 -1 52 18C52 36 67 52 91 52C115 52 130 36 130 18C130 -1 115 -20 91 -20Z" fill="#D0AF71"/>
+    <path d="M91 52V0" stroke="#7B5A27" stroke-width="7"/>
+  </g>
+
+  <g transform="translate(712 560)">
+    <rect x="0" y="0" width="190" height="144" rx="18" fill="url(#gold)"/>
+    <rect x="78" y="0" width="34" height="144" fill="#2B241A"/>
+    <rect x="0" y="58" width="190" height="30" fill="#2B241A"/>
+    <path d="M95 -22C68 -22 52 -2 52 20C52 41 68 58 95 58C122 58 138 41 138 20C138 -2 122 -22 95 -22Z" fill="#1F1A14"/>
+    <path d="M95 58V0" stroke="#A67F40" stroke-width="7"/>
+  </g>
+
+  <g transform="translate(128 284) rotate(-12)">
+    <rect x="0" y="0" width="232" height="128" rx="18" fill="#FFFDF7" stroke="#C7A35F" stroke-width="4"/>
+    <text x="24" y="48" font-size="24" font-family="Sora, Arial, sans-serif" font-weight="700" fill="#1F1A14">VOUCHER</text>
+    <text x="24" y="88" font-size="32" font-family="Sora, Arial, sans-serif" font-weight="800" fill="#A67F40">R$ 15</text>
+    <circle cx="200" cy="92" r="18" fill="#DABF8E"/>
+  </g>
+
+  <g transform="translate(668 226) rotate(10)">
+    <rect x="0" y="0" width="206" height="114" rx="18" fill="#FFFDF9" stroke="#B48E4E" stroke-width="4"/>
+    <text x="20" y="44" font-size="22" font-family="Sora, Arial, sans-serif" font-weight="700" fill="#2B241A">CUPOM</text>
+    <text x="20" y="80" font-size="28" font-family="Sora, Arial, sans-serif" font-weight="800" fill="#9B7437">10% OFF</text>
+  </g>
+
+  <text x="490" y="824" text-anchor="middle" font-size="30" font-family="Sora, Arial, sans-serif" font-weight="700" fill="#5E4623">Presentes do 5.5</text>
+</svg>
