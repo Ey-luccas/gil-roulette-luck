@@ -29,7 +29,7 @@ export type CampaignPrizeStock = {
 
 export const INITIAL_CAMPAIGN_PRIZES_STOCK: CampaignPrizeStock[] = [
   { id: "brinde-surpresa", name: "Brinde surpresa", quantity: 10, note: "" },
-  { id: "presente-surpresa", name: "Presente surpresa", quantity: 4, note: "" },
+  { id: "presente-surpresa", name: "Presente surpresa", quantity: 0, note: "" },
   {
     id: "voucher-15",
     name: "Voucher de R$ 15 na próxima compra",
