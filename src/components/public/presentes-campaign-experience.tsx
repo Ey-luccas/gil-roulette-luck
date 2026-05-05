@@ -12,18 +12,9 @@ import { formatPhone, isValidPhone, normalizePhone } from "@/lib/phone";
 import {
   PRESENTES_CAMPAIGN_NAME,
   cloneInitialCampaignPrizesStock,
-  getRemainingSpinsForCpf,
-  type CampaignParticipant,
   type CampaignPrizeStock,
 } from "@/lib/presentes-campaign";
-import {
-  loadCampaignActiveCpf,
-  loadCampaignParticipants,
-  loadCampaignPrizesStock,
-  saveCampaignActiveCpf,
-  saveCampaignParticipants,
-  saveCampaignPrizesStock,
-} from "@/lib/presentes-campaign-storage";
+import { loadCampaignActiveCpf, saveCampaignActiveCpf } from "@/lib/presentes-campaign-storage";
 
 const SPIN_REVEAL_DELAY_MS = 3400;
 const CAMPAIGN_FLASH_NOTICE_KEY = "campaign_flash_notice";
@@ -52,6 +43,68 @@ type FormValues = {
 type FormErrors = Partial<Record<keyof FormValues, string>>;
 
 type NoticeTone = "info" | "success" | "error";
+
+type CampaignParticipantApi = {
+  id: string;
+  name: string;
+  phone: string;
+  cpf: string;
+  attemptsUsed: number;
+  remainingAttempts: number;
+  maxAttempts: number;
+  whatsappClickedAt: string | null;
+};
+
+type CampaignSpinApi = {
+  id: string;
+  prizeId: string;
+  prizeName: string;
+  prizeNote: string;
+  attemptNumber: number;
+  createdAt: string;
+};
+
+type ParticipantEndpointSuccess = {
+  ok: true;
+  data: {
+    participant: CampaignParticipantApi | null;
+    prizesStock: CampaignPrizeStock[];
+  };
+};
+
+type ParticipantEndpointError = {
+  ok: false;
+  code?: string;
+  error?: string;
+};
+
+type SpinEndpointSuccess = {
+  ok: true;
+  data: {
+    participant: CampaignParticipantApi;
+    spin: CampaignSpinApi;
+    prizesStock: CampaignPrizeStock[];
+  };
+};
+
+type SpinEndpointError = {
+  ok: false;
+  code?: string;
+  error?: string;
+  data?: {
+    participant?: CampaignParticipantApi | null;
+    prizesStock?: CampaignPrizeStock[];
+  };
+};
+
+type RedeemEndpointSuccess = {
+  ok: true;
+  data: {
+    alreadyRedeemed: boolean;
+    participant: CampaignParticipantApi;
+    prizesStock: CampaignPrizeStock[];
+  };
+};
 
 type LatestSpinResult = {
   prize: CampaignPrizeStock;
@@ -83,7 +136,7 @@ function formatPrizeQuantity(quantity: number | null) {
   return `${quantity} restantes`;
 }
 
-function buildWhatsAppRescueMessage(participant: CampaignParticipant, prizeName: string) {
+function buildWhatsAppRescueMessage(participant: CampaignParticipantApi, prizeName: string) {
   return [
     "Olá, equipe GC Conceito!",
     `Meu nome é ${participant.name}, CPF ${formatCpf(participant.cpf)}.`,
@@ -105,11 +158,6 @@ function formatSpinDate(date: string) {
   }).format(parsedDate);
 }
 
-function getActiveParticipant(participants: CampaignParticipant[], cpf: string | null) {
-  if (!cpf) return null;
-  return participants.find((participant) => participant.cpf === cpf) ?? null;
-}
-
 function validateParticipantForm(values: FormValues): FormErrors {
   const errors: FormErrors = {};
 
@@ -128,54 +176,21 @@ function validateParticipantForm(values: FormValues): FormErrors {
   return errors;
 }
 
-type DrawResult = {
-  selectedPrize: CampaignPrizeStock;
-  updatedStock: CampaignPrizeStock[];
-};
-
-function drawPrizeWithStockControl(prizesStock: CampaignPrizeStock[]): DrawResult | null {
-  const availablePrizes = prizesStock.filter((prize) => prize.quantity === null || prize.quantity > 0);
-
-  const fallbackPrize = prizesStock.find((prize) => prize.id === "tente-novamente") ?? null;
-  const drawPool = availablePrizes.length > 0 ? availablePrizes : fallbackPrize ? [fallbackPrize] : [];
-
-  if (drawPool.length === 0) {
-    return null;
-  }
-
-  const selectedPrize = drawPool[Math.floor(Math.random() * drawPool.length)] as CampaignPrizeStock;
-
-  const updatedStock = prizesStock.map((prize) => {
-    if (prize.id !== selectedPrize.id || prize.quantity === null) {
-      return prize;
-    }
-
-    return {
-      ...prize,
-      quantity: Math.max(0, prize.quantity - 1),
-    };
-  });
-
-  return {
-    selectedPrize,
-    updatedStock,
-  };
-}
-
 export function PresentesCampaignExperience({
   mode = "full",
 }: PresentesCampaignExperienceProps) {
   const router = useRouter();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [participants, setParticipants] = useState<CampaignParticipant[]>([]);
+  const [activeParticipant, setActiveParticipant] = useState<CampaignParticipantApi | null>(null);
   const [prizesStock, setPrizesStock] = useState<CampaignPrizeStock[]>(() =>
     cloneInitialCampaignPrizesStock()
   );
-  const [activeCpf, setActiveCpf] = useState<string | null>(null);
   const [latestResult, setLatestResult] = useState<LatestSpinResult | null>(null);
   const [wheelRotation, setWheelRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
   const [formValues, setFormValues] = useState<FormValues>({
@@ -186,48 +201,65 @@ export function PresentesCampaignExperience({
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
-  useEffect(() => {
-    const storedParticipants = loadCampaignParticipants();
-    const storedPrizesStock = loadCampaignPrizesStock();
-    const storedActiveCpf = loadCampaignActiveCpf();
-    const storedActiveParticipant = storedActiveCpf
-      ? storedParticipants.find((participant) => participant.cpf === storedActiveCpf) ?? null
-      : null;
+  const remainingSpins = activeParticipant?.remainingAttempts ?? MAX_SPIN_ATTEMPTS_PER_CPF;
+  const hasRedeemedOnWhatsApp = Boolean(activeParticipant?.whatsappClickedAt);
+  const wheelBackground = useMemo(() => buildWheelBackground(prizesStock), [prizesStock]);
 
-    const rafId = window.requestAnimationFrame(() => {
-      setParticipants(storedParticipants);
-      setPrizesStock(storedPrizesStock);
+  const whatsappRescueUrl = useMemo(() => {
+    if (!activeParticipant || !latestResult) return null;
 
-      if (storedActiveCpf) {
-        setActiveCpf(storedActiveCpf);
-      }
+    const message = buildWhatsAppRescueMessage(activeParticipant, latestResult.prize.name);
+    return buildWhatsAppUrl(message);
+  }, [activeParticipant, latestResult]);
 
-      if (storedActiveParticipant) {
-        setFormValues({
-          name: storedActiveParticipant.name,
-          phone: formatPhone(storedActiveParticipant.phone),
-          cpf: formatCpf(storedActiveParticipant.cpf),
-        });
-      }
-
-      try {
-        const rawFlashNotice = window.sessionStorage.getItem(CAMPAIGN_FLASH_NOTICE_KEY);
-        if (rawFlashNotice) {
-          const parsed = JSON.parse(rawFlashNotice) as { tone?: NoticeTone; message?: string };
-          if (parsed?.tone && parsed?.message) {
-            setNotice({ tone: parsed.tone, message: parsed.message });
-          }
-          window.sessionStorage.removeItem(CAMPAIGN_FLASH_NOTICE_KEY);
-        }
-      } catch {
-        // Sem flash notice disponível.
-      }
+  const loadParticipantByCpf = useCallback(async (cpf: string) => {
+    const response = await fetch(`/api/presentes/participant?cpf=${encodeURIComponent(cpf)}`, {
+      method: "GET",
+      cache: "no-store",
     });
 
-    return () => {
-      window.cancelAnimationFrame(rafId);
-    };
+    const payload = (await response.json().catch(() => null)) as
+      | ParticipantEndpointSuccess
+      | ParticipantEndpointError
+      | null;
+
+    if (!response.ok || !payload?.ok) {
+      return;
+    }
+
+    setPrizesStock(payload.data.prizesStock);
+
+    if (payload.data.participant) {
+      setActiveParticipant(payload.data.participant);
+      setFormValues({
+        name: payload.data.participant.name,
+        phone: formatPhone(payload.data.participant.phone),
+        cpf: formatCpf(payload.data.participant.cpf),
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    const storedActiveCpf = loadCampaignActiveCpf();
+
+    if (storedActiveCpf) {
+      setFormValues((current) => ({ ...current, cpf: formatCpf(storedActiveCpf) }));
+      void loadParticipantByCpf(storedActiveCpf);
+    }
+
+    try {
+      const rawFlashNotice = window.sessionStorage.getItem(CAMPAIGN_FLASH_NOTICE_KEY);
+      if (rawFlashNotice) {
+        const parsed = JSON.parse(rawFlashNotice) as { tone?: NoticeTone; message?: string };
+        if (parsed?.tone && parsed?.message) {
+          setNotice({ tone: parsed.tone, message: parsed.message });
+        }
+        window.sessionStorage.removeItem(CAMPAIGN_FLASH_NOTICE_KEY);
+      }
+    } catch {
+      // Sem flash notice disponível.
+    }
+  }, [loadParticipantByCpf]);
 
   useEffect(() => {
     return () => {
@@ -250,22 +282,6 @@ export function PresentesCampaignExperience({
     };
   }, [notice, isSpinning]);
 
-  const activeParticipant = useMemo(
-    () => getActiveParticipant(participants, activeCpf),
-    [participants, activeCpf]
-  );
-
-  const spinsUsed = activeParticipant?.spins.length ?? 0;
-  const remainingSpins = getRemainingSpinsForCpf(spinsUsed);
-  const wheelBackground = useMemo(() => buildWheelBackground(prizesStock), [prizesStock]);
-
-  const whatsappRescueUrl = useMemo(() => {
-    if (!activeParticipant || !latestResult) return null;
-
-    const message = buildWhatsAppRescueMessage(activeParticipant, latestResult.prize.name);
-    return buildWhatsAppUrl(message);
-  }, [activeParticipant, latestResult]);
-
   const handleFieldChange = useCallback((field: keyof FormValues, value: string) => {
     if (field === "phone") {
       setFormValues((current) => ({ ...current, phone: formatPhone(value) }));
@@ -279,7 +295,7 @@ export function PresentesCampaignExperience({
   }, []);
 
   const handleRegisterParticipant = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
+    async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       const nextErrors = validateParticipantForm(formValues);
@@ -293,75 +309,90 @@ export function PresentesCampaignExperience({
         return;
       }
 
-      const normalizedCpf = normalizeCpf(formValues.cpf);
-      const normalizedPhone = normalizePhone(formValues.phone);
-      const normalizedName = formValues.name.trim();
+      setIsSubmittingForm(true);
 
-      const existingParticipant = participants.find((participant) => participant.cpf === normalizedCpf);
-
-      const nextParticipant: CampaignParticipant = existingParticipant
-        ? {
-            ...existingParticipant,
-            name: normalizedName,
-            phone: normalizedPhone,
-          }
-        : {
-            name: normalizedName,
-            phone: normalizedPhone,
-            cpf: normalizedCpf,
-            spins: [],
-          };
-
-      const nextParticipants = existingParticipant
-        ? participants.map((participant) =>
-            participant.cpf === normalizedCpf ? nextParticipant : participant
-          )
-        : [...participants, nextParticipant];
-
-      saveCampaignParticipants(nextParticipants);
-      saveCampaignActiveCpf(normalizedCpf);
-
-      setParticipants(nextParticipants);
-      setActiveCpf(normalizedCpf);
-      setLatestResult(null);
-
-      const availableSpins = getRemainingSpinsForCpf(nextParticipant.spins.length);
-
-      if (availableSpins <= 0) {
-        setNotice({
-          tone: "error",
-          message: "Você já utilizou suas 3 chances nesta campanha.",
+      try {
+        const response = await fetch("/api/presentes/participant", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formValues.name.trim(),
+            phone: normalizePhone(formValues.phone),
+            cpf: normalizeCpf(formValues.cpf),
+          }),
         });
-        return;
-      }
 
-      const successMessage = `Cadastro confirmado. Giros restantes: ${availableSpins} de ${MAX_SPIN_ATTEMPTS_PER_CPF}. Agora você pode seguir para a roleta.`;
+        const payload = (await response.json().catch(() => null)) as
+          | ParticipantEndpointSuccess
+          | ParticipantEndpointError
+          | null;
 
-      if (mode === "form") {
-        try {
-          window.sessionStorage.setItem(
-            CAMPAIGN_FLASH_NOTICE_KEY,
-            JSON.stringify({
-              tone: "success" as NoticeTone,
-              message: successMessage,
-            })
-          );
-        } catch {
-          // Segue o fluxo mesmo sem persistir o alerta.
+        if (!response.ok || !payload?.ok || !payload.data.participant) {
+          setNotice({
+            tone: "error",
+            message: payload && "error" in payload && payload.error
+              ? payload.error
+              : "Não foi possível validar seu cadastro.",
+          });
+          return;
         }
-        router.push("/giro");
-        return;
-      }
 
-      setNotice({
-        tone: "success",
-        message: successMessage,
-      });
+        const participant = payload.data.participant;
+
+        setPrizesStock(payload.data.prizesStock);
+        setActiveParticipant(participant);
+        setLatestResult(null);
+        saveCampaignActiveCpf(participant.cpf);
+
+        if (participant.remainingAttempts <= 0) {
+          setNotice({
+            tone: "error",
+            message: "Você já utilizou suas 3 chances nesta campanha.",
+          });
+          return;
+        }
+
+        if (participant.whatsappClickedAt) {
+          setNotice({
+            tone: "error",
+            message: "Este CPF já iniciou o resgate no WhatsApp e não pode realizar novos giros.",
+          });
+          return;
+        }
+
+        const successMessage = `Cadastro confirmado. Giros restantes: ${participant.remainingAttempts} de ${participant.maxAttempts}. Agora você pode seguir para a roleta.`;
+
+        if (mode === "form") {
+          try {
+            window.sessionStorage.setItem(
+              CAMPAIGN_FLASH_NOTICE_KEY,
+              JSON.stringify({
+                tone: "success" as NoticeTone,
+                message: successMessage,
+              })
+            );
+          } catch {
+            // Segue o fluxo mesmo sem persistir o alerta.
+          }
+
+          router.push("/giro");
+          return;
+        }
+
+        setNotice({
+          tone: "success",
+          message: successMessage,
+        });
+      } finally {
+        setIsSubmittingForm(false);
+      }
     },
-    [formValues, mode, participants, router]
+    [formValues, mode, router]
   );
 
-  const handleSpin = useCallback(() => {
+  const handleSpin = useCallback(async () => {
     if (isSpinning) return;
 
     if (!activeParticipant) {
@@ -372,7 +403,15 @@ export function PresentesCampaignExperience({
       return;
     }
 
-    if (activeParticipant.spins.length >= MAX_SPIN_ATTEMPTS_PER_CPF) {
+    if (hasRedeemedOnWhatsApp) {
+      setNotice({
+        tone: "error",
+        message: "Este CPF já iniciou o resgate no WhatsApp e não pode realizar novos giros.",
+      });
+      return;
+    }
+
+    if (activeParticipant.remainingAttempts <= 0) {
       setNotice({
         tone: "error",
         message: "Você já utilizou suas 3 chances nesta campanha.",
@@ -380,45 +419,46 @@ export function PresentesCampaignExperience({
       return;
     }
 
-    const drawResult = drawPrizeWithStockControl(prizesStock);
-
-    if (!drawResult) {
-      setNotice({
-        tone: "error",
-        message: "Não foi possível sortear um prêmio agora. Tente novamente.",
-      });
-      return;
-    }
-
-    const spinDate = new Date().toISOString();
-    const nextSpin = {
-      prize: drawResult.selectedPrize.name,
-      prizeId: drawResult.selectedPrize.id,
-      note: drawResult.selectedPrize.note,
-      date: spinDate,
-    };
-
-    const updatedParticipant: CampaignParticipant = {
-      ...activeParticipant,
-      spins: [...activeParticipant.spins, nextSpin],
-    };
-
-    const nextParticipants = participants.map((participant) =>
-      participant.cpf === activeParticipant.cpf ? updatedParticipant : participant
-    );
-
-    const nextPrizesStock = drawResult.updatedStock;
-
-    saveCampaignParticipants(nextParticipants);
-    saveCampaignPrizesStock(nextPrizesStock);
-
-    setParticipants(nextParticipants);
-    setPrizesStock(nextPrizesStock);
     setIsResultModalOpen(false);
     setIsSpinning(true);
     setNotice({ tone: "info", message: "Girando roleta..." });
 
-    const selectedIndex = prizesStock.findIndex((prize) => prize.id === drawResult.selectedPrize.id);
+    const response = await fetch("/api/presentes/spin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ participantId: activeParticipant.id }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | SpinEndpointSuccess
+      | SpinEndpointError
+      | null;
+
+    if (!response.ok || !payload?.ok) {
+      setIsSpinning(false);
+
+      if (payload && "data" in payload) {
+        if (payload.data?.participant) {
+          setActiveParticipant(payload.data.participant);
+        }
+
+        if (payload.data?.prizesStock) {
+          setPrizesStock(payload.data.prizesStock);
+        }
+      }
+
+      setNotice({
+        tone: "error",
+        message: payload && "error" in payload && payload.error
+          ? payload.error
+          : "Não foi possível registrar este giro agora.",
+      });
+      return;
+    }
+
+    const selectedIndex = prizesStock.findIndex((prize) => prize.id === payload.data.spin.prizeId);
     const safeSelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
     const segmentSize = 360 / Math.max(prizesStock.length, 1);
@@ -432,34 +472,95 @@ export function PresentesCampaignExperience({
     }
 
     timeoutRef.current = setTimeout(() => {
-      const remainingAfterSpin = getRemainingSpinsForCpf(updatedParticipant.spins.length);
+      setPrizesStock(payload.data.prizesStock);
+      setActiveParticipant(payload.data.participant);
 
       setLatestResult({
-        prize: drawResult.selectedPrize,
-        date: spinDate,
+        prize: {
+          id: payload.data.spin.prizeId,
+          name: payload.data.spin.prizeName,
+          note: payload.data.spin.prizeNote,
+          quantity:
+            payload.data.prizesStock.find((prize) => prize.id === payload.data.spin.prizeId)?.quantity ??
+            null,
+        },
+        date: payload.data.spin.createdAt,
       });
+
       setIsResultModalOpen(true);
       setIsSpinning(false);
 
-      if (remainingAfterSpin > 0) {
+      if (payload.data.participant.remainingAttempts > 0) {
         setNotice({
           tone: "success",
-          message: `Resultado registrado! Você ganhou "${drawResult.selectedPrize.name}". Giros restantes: ${remainingAfterSpin} de ${MAX_SPIN_ATTEMPTS_PER_CPF}.`,
+          message: `Resultado registrado! Você ganhou "${payload.data.spin.prizeName}". Giros restantes: ${payload.data.participant.remainingAttempts} de ${payload.data.participant.maxAttempts}.`,
         });
         return;
       }
 
       setNotice({
         tone: "success",
-        message: `Resultado registrado! Você ganhou "${drawResult.selectedPrize.name}". Você já utilizou suas 3 chances nesta campanha.`,
+        message: `Resultado registrado! Você ganhou "${payload.data.spin.prizeName}". Você já utilizou suas 3 chances nesta campanha.`,
       });
     }, SPIN_REVEAL_DELAY_MS);
-  }, [activeParticipant, isSpinning, participants, prizesStock, wheelRotation]);
+  }, [
+    activeParticipant,
+    hasRedeemedOnWhatsApp,
+    isSpinning,
+    prizesStock,
+    wheelRotation,
+  ]);
+
+  const handleRedeem = useCallback(async () => {
+    if (!activeParticipant || !whatsappRescueUrl) return;
+
+    setIsRedeeming(true);
+
+    try {
+      const response = await fetch("/api/presentes/redeem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          participantId: activeParticipant.id,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | RedeemEndpointSuccess
+        | { ok?: false; error?: string }
+        | null;
+
+      if (!response.ok || !payload || !("ok" in payload) || !payload.ok) {
+        setNotice({
+          tone: "error",
+          message: payload && "error" in payload && payload.error
+            ? payload.error
+            : "Não foi possível iniciar o resgate agora. Tente novamente.",
+        });
+        return;
+      }
+
+      setActiveParticipant(payload.data.participant);
+      setPrizesStock(payload.data.prizesStock);
+      setNotice({
+        tone: "success",
+        message: payload.data.alreadyRedeemed
+          ? "Resgate já havia sido iniciado para este CPF."
+          : "Resgate iniciado no WhatsApp. Novos giros foram bloqueados para este CPF.",
+      });
+
+      setIsResultModalOpen(false);
+      window.open(whatsappRescueUrl, "_blank", "noopener,noreferrer");
+    } finally {
+      setIsRedeeming(false);
+    }
+  }, [activeParticipant, whatsappRescueUrl]);
 
   const showForm = mode !== "wheel";
   const showWheel = mode !== "form";
   const showCombined = showForm && showWheel;
-  const displayRemainingSpins = activeParticipant ? remainingSpins : MAX_SPIN_ATTEMPTS_PER_CPF;
 
   const formArticle = (
     <article className="campaign-panel p-5 sm:p-6">
@@ -521,19 +622,26 @@ export function PresentesCampaignExperience({
             ) : null}
           </label>
 
-          <button type="submit" className="campaign-cta w-full gap-2">
-            <Sparkles className="h-4 w-4" />
+          <button
+            type="submit"
+            disabled={isSubmittingForm}
+            className="campaign-cta w-full gap-2 disabled:pointer-events-none disabled:opacity-60"
+          >
+            {isSubmittingForm ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
             Validar e confirmar cadastro
           </button>
         </form>
 
         <div className="campaign-highlight p-4">
           <p className="text-lg font-black tracking-tight text-primary">
-            Giros restantes: {displayRemainingSpins} de {MAX_SPIN_ATTEMPTS_PER_CPF}
+            Giros restantes: {remainingSpins} de {MAX_SPIN_ATTEMPTS_PER_CPF}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Regra da campanha: até 3 chances por CPF.</p>
         </div>
-
       </div>
     </article>
   );
@@ -595,8 +703,10 @@ export function PresentesCampaignExperience({
 
         <button
           type="button"
-          onClick={handleSpin}
-          disabled={isSpinning || !activeParticipant || remainingSpins <= 0}
+          onClick={() => {
+            void handleSpin();
+          }}
+          disabled={isSpinning || !activeParticipant || remainingSpins <= 0 || hasRedeemedOnWhatsApp}
           className="campaign-cta w-full gap-2 disabled:pointer-events-none disabled:opacity-60"
         >
           {isSpinning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />}
@@ -652,6 +762,11 @@ export function PresentesCampaignExperience({
               <p className="mt-1 text-sm font-semibold text-primary">
                 Giros restantes: {remainingSpins} de {MAX_SPIN_ATTEMPTS_PER_CPF}
               </p>
+              {hasRedeemedOnWhatsApp ? (
+                <p className="mt-1 text-xs font-semibold text-rose-700">
+                  Resgate já iniciado no WhatsApp. Novos giros estão bloqueados para este CPF.
+                </p>
+              ) : null}
             </article>
           )}
 
@@ -690,15 +805,17 @@ export function PresentesCampaignExperience({
           </div>
 
           {whatsappRescueUrl ? (
-            <a
-              href={whatsappRescueUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="campaign-cta w-full gap-2 sm:w-fit"
+            <button
+              type="button"
+              onClick={() => {
+                void handleRedeem();
+              }}
+              disabled={isRedeeming}
+              className="campaign-cta w-full gap-2 sm:w-fit disabled:pointer-events-none disabled:opacity-60"
             >
-              <Send className="h-4 w-4" />
+              {isRedeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Enviar resultado no WhatsApp
-            </a>
+            </button>
           ) : null}
         </article>
       ) : null}
@@ -728,28 +845,25 @@ export function PresentesCampaignExperience({
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsResultModalOpen(false);
-                    if (remainingSpins > 0) {
-                      handleSpin();
-                    }
-                  }}
-                  disabled={remainingSpins <= 0 || isSpinning}
+                  onClick={() => setIsResultModalOpen(false)}
+                  disabled={remainingSpins <= 0}
                   className="campaign-cta-outline h-11 w-full disabled:pointer-events-none disabled:opacity-60"
                 >
                   {remainingSpins > 0 ? "Tentar novamente" : "Sem giros restantes"}
                 </button>
 
                 {whatsappRescueUrl ? (
-                  <a
-                    href={whatsappRescueUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsResultModalOpen(false)}
-                    className="campaign-cta h-11 w-full"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleRedeem();
+                    }}
+                    disabled={isRedeeming}
+                    className="campaign-cta h-11 w-full disabled:pointer-events-none disabled:opacity-60"
                   >
+                    {isRedeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     Resgatar presente
-                  </a>
+                  </button>
                 ) : null}
               </div>
             </div>

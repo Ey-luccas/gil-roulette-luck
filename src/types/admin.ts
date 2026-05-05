@@ -29,25 +29,13 @@ export type AdminItemListRow = {
   createdAt: string;
 };
 
-export type AdminCustomerLatestItem = {
-  id: string;
-  name: string;
-  imageUrl: string;
-  originalPrice: number;
-  isActive: boolean;
-};
-
-export type AdminCustomerLatestSpin = {
+export type AdminCustomerSpin = {
   id: string;
   attemptNumber: number;
-  finalPrice: number;
-  originalTotal: number;
-  discountAmount: number;
-  discountPercent: number;
+  prizeId: string;
+  prizeName: string;
+  prizeNote: string;
   createdAt: string;
-  isSold: boolean;
-  soldAt: string | null;
-  items: AdminCustomerLatestItem[];
 };
 
 export type AdminCustomerRow = {
@@ -56,6 +44,10 @@ export type AdminCustomerRow = {
   phone: string;
   cpf: string;
   spinAttempts: number;
+  remainingAttempts: number;
+  maxAttempts: number;
+  whatsappClickedAt: string | null;
   createdAt: string;
-  latestSpin: AdminCustomerLatestSpin | null;
+  updatedAt: string;
+  spins: AdminCustomerSpin[];
 };

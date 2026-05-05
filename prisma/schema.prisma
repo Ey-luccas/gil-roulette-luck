@@ -73,3 +73,46 @@ model AdminUser {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model CampaignParticipant {
+  id                String         @id @default(cuid())
+  name              String
+  phone             String
+  cpf               String
+  cpfHash           String         @unique
+  spinAttempts      Int            @default(0)
+  whatsappClickedAt DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  spins             CampaignSpin[]
+
+  @@index([cpf])
+}
+
+model CampaignPrize {
+  id          String         @id
+  name        String
+  note        String
+  quantity    Int?
+  isUnlimited Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  spins       CampaignSpin[]
+}
+
+model CampaignSpin {
+  id            String              @id @default(cuid())
+  participantId String
+  prizeId       String
+  attemptNumber Int
+  prizeName     String
+  prizeNote     String
+  createdAt     DateTime            @default(now())
+
+  participant CampaignParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  prize       CampaignPrize       @relation(fields: [prizeId], references: [id], onDelete: Restrict)
+
+  @@unique([participantId, attemptNumber])
+  @@index([participantId, createdAt(sort: Desc)])
+  @@index([prizeId])
+}

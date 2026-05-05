@@ -5,27 +5,25 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const session = await requireAdminSession();
 
-  const [totalItems, activeItems, totalParticipants, totalSpins] = await prisma.$transaction([
+  const [totalItems, activeItems, totalParticipants, totalSpins, totalRedeems] = await prisma.$transaction([
     prisma.item.count(),
     prisma.item.count({ where: { isActive: true } }),
-    prisma.participant.count(),
-    prisma.spinResult.count(),
+    prisma.campaignParticipant.count(),
+    prisma.campaignSpin.count(),
+    prisma.campaignParticipant.count({
+      where: {
+        whatsappClickedAt: {
+          not: null,
+        },
+      },
+    }),
   ]);
-
-  const soldSpins = await prisma.spinResult.count({ where: { isSold: true } }).catch((error) => {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
-      return 0;
-    }
-
-    throw error;
-  });
 
   return (
     <CampaignShell>
@@ -59,9 +57,9 @@ export default async function AdminDashboardPage() {
           description="Resultados da campanha já confirmados no banco."
         />
         <AdminMetricCard
-          label="Vendas confirmadas"
-          value={soldSpins}
-          description="Resultados marcados como vendidos no painel de clientes."
+          label="Resgates iniciados"
+          value={totalRedeems}
+          description="Participantes que já clicaram para resgatar pelo WhatsApp."
         />
       </section>
 

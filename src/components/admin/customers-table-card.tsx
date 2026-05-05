@@ -1,42 +1,26 @@
 "use client";
 
-import Image from "next/image";
-import { AlertCircle, CheckCircle2, Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCpf } from "@/lib/cpf";
 import { formatPhone } from "@/lib/phone";
-import { formatBRL, formatPercent } from "@/lib/pricing";
 import type { AdminCustomerRow } from "@/types/admin";
 
 type CustomersTableCardProps = {
   initialCustomers: AdminCustomerRow[];
-};
-
-type FeedbackState =
-  | {
-      type: "idle";
-      message?: undefined;
-    }
-  | {
-      type: "success" | "error";
-      message: string;
-    };
-
-type MarkSoldResponse = {
-  ok?: boolean;
-  error?: string;
-  data?: {
-    alreadySold?: boolean;
-    soldAt?: string | null;
-    relatedItemIds?: string[];
-    deactivatedItemsCount?: number;
-  };
 };
 
 function formatDate(value: string) {
@@ -59,33 +43,30 @@ function normalizeDigits(value: string) {
 }
 
 export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps) {
-  const [customers, setCustomers] = useState<AdminCustomerRow[]>(initialCustomers);
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [feedback, setFeedback] = useState<FeedbackState>({ type: "idle" });
-  const [busyParticipantId, setBusyParticipantId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
-    const withSpin = customers.filter((customer) => customer.latestSpin !== null).length;
-    const sold = customers.filter((customer) => customer.latestSpin?.isSold).length;
+    const withSpin = initialCustomers.filter((customer) => customer.spins.length > 0).length;
+    const redeemed = initialCustomers.filter((customer) => Boolean(customer.whatsappClickedAt)).length;
 
     return {
-      total: customers.length,
+      total: initialCustomers.length,
       withSpin,
-      sold,
+      redeemed,
     };
-  }, [customers]);
+  }, [initialCustomers]);
 
   const filteredCustomers = useMemo(() => {
     const trimmedTerm = searchTerm.trim();
     if (!trimmedTerm) {
-      return customers;
+      return initialCustomers;
     }
 
     const normalizedTerm = normalizeText(trimmedTerm);
     const termDigits = normalizeDigits(trimmedTerm);
 
-    return customers.filter((customer) => {
+    return initialCustomers.filter((customer) => {
       const customerName = normalizeText(customer.name);
       const customerCpf = normalizeDigits(customer.cpf);
 
@@ -99,9 +80,9 @@ export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps
 
       return false;
     });
-  }, [customers, searchTerm]);
+  }, [initialCustomers, searchTerm]);
 
-  function toggleLatestItems(participantId: string) {
+  function toggleSpins(participantId: string) {
     setExpandedRows((current) => {
       if (current.includes(participantId)) {
         return current.filter((id) => id !== participantId);
@@ -111,100 +92,28 @@ export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps
     });
   }
 
-  async function markLatestSpinAsSold(customer: AdminCustomerRow) {
-    if (!customer.latestSpin) {
-      return;
-    }
-
-    setBusyParticipantId(customer.id);
-    setFeedback({ type: "idle" });
-
-    try {
-      const response = await fetch(`/api/admin/customers/${customer.id}/sold`, {
-        method: "PATCH",
-      });
-
-      const payload = (await response.json().catch(() => null)) as MarkSoldResponse | null;
-
-      if (!response.ok || !payload?.ok) {
-        setFeedback({
-          type: "error",
-          message: payload?.error ?? "Não foi possível marcar a venda agora.",
-        });
-        return;
-      }
-
-      const soldAt = payload.data?.soldAt ?? new Date().toISOString();
-      const relatedItemIds = payload.data?.relatedItemIds ?? [];
-      const deactivatedItemsCount = payload.data?.deactivatedItemsCount ?? 0;
-      const alreadySold = payload.data?.alreadySold ?? false;
-
-      setCustomers((current) =>
-        current.map((entry) => {
-          if (entry.id !== customer.id || !entry.latestSpin) {
-            return entry;
-          }
-
-          return {
-            ...entry,
-            latestSpin: {
-              ...entry.latestSpin,
-              isSold: true,
-              soldAt,
-              items: entry.latestSpin.items.map((item) =>
-                relatedItemIds.includes(item.id)
-                  ? {
-                      ...item,
-                      isActive: false,
-                    }
-                  : item
-              ),
-            },
-          };
-        })
-      );
-
-      setFeedback({
-        type: "success",
-        message: alreadySold
-          ? `Venda de ${customer.name} já estava confirmada.`
-          : `Venda confirmada para ${customer.name}. ${deactivatedItemsCount} peça(s) removida(s) do catálogo ativo.`,
-      });
-    } catch {
-      setFeedback({
-        type: "error",
-        message: "Instabilidade ao atualizar o status de venda.",
-      });
-    } finally {
-      setBusyParticipantId(null);
-    }
-  }
-
   return (
     <Card className="campaign-panel">
       <CardHeader className="space-y-4">
         <div className="space-y-2">
-          <CardTitle className="text-2xl font-black">Clientes da campanha</CardTitle>
+          <CardTitle className="text-2xl font-black">Participantes da campanha</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Busque por nome ou CPF, consulte os últimos looks girados e marque como vendida para
-            retirar as peças do catálogo ativo.
+            Busque por nome ou CPF para ver os giros registrados e o prêmio sorteado em cada tentativa.
           </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="campaign-status-info rounded-xl px-3 py-2 text-sm">
-            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Clientes</p>
+            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Participantes</p>
             <p className="text-xl font-black text-foreground">{summary.total}</p>
           </div>
           <div className="campaign-status-info rounded-xl px-3 py-2 text-sm">
-            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
-              Com último giro
-            </p>
+            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Com giro</p>
             <p className="text-xl font-black text-foreground">{summary.withSpin}</p>
           </div>
           <div className="campaign-status-info rounded-xl px-3 py-2 text-sm">
-            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Vendidas</p>
-            <p className="text-xl font-black text-foreground">{summary.sold}</p>
+            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Resgates iniciados</p>
+            <p className="text-xl font-black text-foreground">{summary.redeemed}</p>
           </div>
         </div>
       </CardHeader>
@@ -215,48 +124,33 @@ export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps
           <Input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Pesquisar cliente por nome ou CPF..."
+            placeholder="Pesquisar participante por nome ou CPF..."
             className="h-10 rounded-xl bg-background pl-9"
           />
         </div>
 
-        {feedback.type === "error" ? (
-          <div className="campaign-status-error flex items-start gap-2 px-3 py-2 text-sm">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{feedback.message}</span>
-          </div>
-        ) : null}
-
-        {feedback.type === "success" ? (
-          <div className="campaign-status-success flex items-start gap-2 px-3 py-2 text-sm">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{feedback.message}</span>
-          </div>
-        ) : null}
-
         {filteredCustomers.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">
-            Nenhum cliente encontrado para esta busca.
+            Nenhum participante encontrado para esta busca.
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-border/70 bg-background/80">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Participante</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>CPF</TableHead>
-                  <TableHead>Tentativas</TableHead>
+                  <TableHead>Giros</TableHead>
                   <TableHead>Último giro</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Resgate</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {filteredCustomers.map((customer) => {
-                  const latestSpin = customer.latestSpin;
-                  const isBusy = busyParticipantId === customer.id;
+                  const latestSpin = customer.spins[customer.spins.length - 1] ?? null;
                   const isExpanded = expandedRows.includes(customer.id);
 
                   return (
@@ -264,7 +158,7 @@ export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps
                       <TableRow>
                         <TableCell>
                           <div>
-                            <p className="max-w-[220px] truncate font-semibold">{customer.name}</p>
+                            <p className="max-w-[240px] truncate font-semibold">{customer.name}</p>
                             <p className="text-xs text-muted-foreground">
                               Cadastro: {formatDate(customer.createdAt)}
                             </p>
@@ -274,116 +168,61 @@ export function CustomersTableCard({ initialCustomers }: CustomersTableCardProps
                           <p className="whitespace-nowrap">{formatPhone(customer.phone)}</p>
                         </TableCell>
                         <TableCell>{formatCpf(customer.cpf)}</TableCell>
-                        <TableCell>{customer.spinAttempts}/3</TableCell>
+                        <TableCell>
+                          {customer.spinAttempts}/{customer.maxAttempts}
+                          <p className="text-xs text-muted-foreground">
+                            Restantes: {customer.remainingAttempts}
+                          </p>
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {latestSpin ? formatDate(latestSpin.createdAt) : "Sem giro"}
                         </TableCell>
                         <TableCell>
-                          {latestSpin ? (
-                            latestSpin.isSold ? (
-                              <Badge variant="secondary">Vendida</Badge>
-                            ) : (
-                              <Badge variant="outline">Pendente</Badge>
-                            )
+                          {customer.whatsappClickedAt ? (
+                            <Badge variant="secondary">Iniciado</Badge>
                           ) : (
-                            <Badge variant="outline">Sem giro</Badge>
+                            <Badge variant="outline">Pendente</Badge>
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end">
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              disabled={!latestSpin}
-                              onClick={() => toggleLatestItems(customer.id)}
+                              disabled={customer.spins.length === 0}
+                              onClick={() => toggleSpins(customer.id)}
                             >
-                              {isExpanded ? "Ocultar looks" : "Ver últimos looks"}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              disabled={!latestSpin || latestSpin.isSold || isBusy}
-                              onClick={() => {
-                                void markLatestSpinAsSold(customer);
-                              }}
-                            >
-                              {isBusy ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  Salvando
-                                </>
-                              ) : (
-                                "Vendidas"
-                              )}
+                              {isExpanded ? "Ocultar giros" : "Ver giros"}
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
 
-                      {isExpanded && latestSpin ? (
+                      {isExpanded ? (
                         <TableRow>
                           <TableCell colSpan={7} className="bg-muted/35">
                             <div className="space-y-3 py-2">
-                              <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-                                <p>
-                                  Valor final:{" "}
-                                  <span className="font-semibold text-foreground">
-                                    {formatBRL(latestSpin.finalPrice)}
-                                  </span>
-                                </p>
-                                <p>
-                                  Total original:{" "}
-                                  <span className="font-semibold text-foreground">
-                                    {formatBRL(latestSpin.originalTotal)}
-                                  </span>
-                                </p>
-                                <p>
-                                  Economia:{" "}
-                                  <span className="font-semibold text-foreground">
-                                    {formatBRL(latestSpin.discountAmount)}
-                                  </span>
-                                </p>
-                                <p>
-                                  Desconto:{" "}
-                                  <span className="font-semibold text-foreground">
-                                    {formatPercent(latestSpin.discountPercent)}
-                                  </span>
-                                </p>
-                              </div>
+                              <p className="text-xs font-semibold tracking-[0.08em] uppercase text-muted-foreground">
+                                Histórico de resultados do CPF
+                              </p>
 
-                              <div className="grid gap-3 sm:grid-cols-3">
-                                {latestSpin.items.map((item, index) => (
+                              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                {customer.spins.map((spin) => (
                                   <article
-                                    key={item.id}
-                                    className="overflow-hidden rounded-xl border border-border/80 bg-card"
+                                    key={spin.id}
+                                    className="space-y-1 rounded-xl border border-border/80 bg-card p-3"
                                   >
-                                    <div className="relative aspect-[4/5] bg-muted/50">
-                                      <Image
-                                        src={item.imageUrl}
-                                        alt={item.name}
-                                        fill
-                                        unoptimized
-                                        className="object-cover"
-                                        sizes="(max-width: 768px) 100vw, 20vw"
-                                      />
-                                    </div>
-                                    <div className="space-y-1 p-3">
-                                      <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                                        Look {index + 1}
-                                      </p>
-                                      <p className="line-clamp-2 min-h-9 text-sm font-semibold">
-                                        {item.name}
-                                      </p>
-                                      <div className="flex items-center justify-between text-xs">
-                                        <span className="font-semibold text-foreground">
-                                          {formatBRL(item.originalPrice)}
-                                        </span>
-                                        <Badge variant={item.isActive ? "outline" : "secondary"}>
-                                          {item.isActive ? "Ativa" : "Inativa"}
-                                        </Badge>
-                                      </div>
-                                    </div>
+                                    <p className="text-xs font-semibold tracking-[0.08em] uppercase text-muted-foreground">
+                                      {spin.attemptNumber}º giro
+                                    </p>
+                                    <p className="text-sm font-bold leading-snug">{spin.prizeName}</p>
+                                    {spin.prizeNote ? (
+                                      <p className="text-xs text-muted-foreground">{spin.prizeNote}</p>
+                                    ) : null}
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatDate(spin.createdAt)}
+                                    </p>
                                   </article>
                                 ))}
                               </div>

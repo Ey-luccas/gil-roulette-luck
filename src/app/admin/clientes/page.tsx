@@ -2,21 +2,20 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { CustomersTableCard } from "@/components/admin/customers-table-card";
 import { CampaignShell } from "@/components/shared/campaign-shell";
 import { SectionHeading } from "@/components/shared/section-heading";
+import {
+  MAX_SPIN_ATTEMPTS_PER_CPF,
+  getRemainingSpinAttempts,
+} from "@/lib/campaign-rules";
 import { requireAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { AdminCustomerRow } from "@/types/admin";
-import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
-
-function toNumber(value: { toString(): string }) {
-  return Number(value.toString());
-}
 
 export default async function AdminClientesPage() {
   const session = await requireAdminSession();
 
-  const participants = await prisma.participant.findMany({
+  const participants = await prisma.campaignParticipant.findMany({
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     select: {
       id: true,
@@ -24,124 +23,52 @@ export default async function AdminClientesPage() {
       phone: true,
       cpf: true,
       spinAttempts: true,
+      whatsappClickedAt: true,
       createdAt: true,
-      spinResults: {
-        orderBy: [{ attemptNumber: "desc" }, { createdAt: "desc" }],
-        take: 1,
+      updatedAt: true,
+      spins: {
+        orderBy: [{ attemptNumber: "asc" }, { createdAt: "asc" }],
         select: {
           id: true,
           attemptNumber: true,
-          finalPrice: true,
-          originalTotal: true,
-          discountAmount: true,
-          discountPercent: true,
+          prizeId: true,
+          prizeName: true,
+          prizeNote: true,
           createdAt: true,
-          isSold: true,
-          soldAt: true,
-          items: {
-            select: {
-              item: {
-                select: {
-                  id: true,
-                  name: true,
-                  imageUrl: true,
-                  originalPrice: true,
-                  isActive: true,
-                },
-              },
-            },
-          },
         },
       },
     },
-  }).catch(async (error) => {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
-      return prisma.participant.findMany({
-        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          cpf: true,
-          spinAttempts: true,
-          createdAt: true,
-          spinResults: {
-            orderBy: [{ attemptNumber: "desc" }, { createdAt: "desc" }],
-            take: 1,
-            select: {
-              id: true,
-              attemptNumber: true,
-              finalPrice: true,
-              originalTotal: true,
-              discountAmount: true,
-              discountPercent: true,
-              createdAt: true,
-              items: {
-                select: {
-                  item: {
-                    select: {
-                      id: true,
-                      name: true,
-                      imageUrl: true,
-                      originalPrice: true,
-                      isActive: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-    }
-
-    throw error;
   });
 
-  const customers: AdminCustomerRow[] = participants.map((participant) => {
-    const latestSpin = participant.spinResults[0];
-
-    return {
-      id: participant.id,
-      name: participant.name,
-      phone: participant.phone,
-      cpf: participant.cpf,
-      spinAttempts: participant.spinAttempts,
-      createdAt: participant.createdAt.toISOString(),
-      latestSpin: latestSpin
-        ? {
-            id: latestSpin.id,
-            attemptNumber: latestSpin.attemptNumber,
-            finalPrice: toNumber(latestSpin.finalPrice),
-            originalTotal: toNumber(latestSpin.originalTotal),
-            discountAmount: toNumber(latestSpin.discountAmount),
-            discountPercent: toNumber(latestSpin.discountPercent),
-            createdAt: latestSpin.createdAt.toISOString(),
-            isSold: "isSold" in latestSpin ? Boolean(latestSpin.isSold) : false,
-            soldAt:
-              "soldAt" in latestSpin
-                ? latestSpin.soldAt
-                  ? latestSpin.soldAt.toISOString()
-                  : null
-                : null,
-            items: latestSpin.items.map((entry) => ({
-              id: entry.item.id,
-              name: entry.item.name,
-              imageUrl: `/api/items/${encodeURIComponent(entry.item.id)}/image`,
-              originalPrice: toNumber(entry.item.originalPrice),
-              isActive: entry.item.isActive,
-            })),
-          }
-        : null,
-    };
-  });
+  const customers: AdminCustomerRow[] = participants.map((participant) => ({
+    id: participant.id,
+    name: participant.name,
+    phone: participant.phone,
+    cpf: participant.cpf,
+    spinAttempts: participant.spinAttempts,
+    remainingAttempts: getRemainingSpinAttempts(participant.spinAttempts),
+    maxAttempts: MAX_SPIN_ATTEMPTS_PER_CPF,
+    whatsappClickedAt: participant.whatsappClickedAt
+      ? participant.whatsappClickedAt.toISOString()
+      : null,
+    createdAt: participant.createdAt.toISOString(),
+    updatedAt: participant.updatedAt.toISOString(),
+    spins: participant.spins.map((spin) => ({
+      id: spin.id,
+      attemptNumber: spin.attemptNumber,
+      prizeId: spin.prizeId,
+      prizeName: spin.prizeName,
+      prizeNote: spin.prizeNote,
+      createdAt: spin.createdAt.toISOString(),
+    })),
+  }));
 
   return (
     <CampaignShell>
       <SectionHeading
         kicker="Admin"
-        title="Painel de clientes"
-        description="Acompanhe participantes, consulte os últimos looks girados e finalize vendas para retirar peças do catálogo ativo."
+        title="Painel de participantes"
+        description="Consulte quem participou da campanha Presentes do 5.5 e veja o prêmio de cada giro por CPF."
       />
 
       <AdminHeader pathname="/admin/clientes" username={session.username} />
