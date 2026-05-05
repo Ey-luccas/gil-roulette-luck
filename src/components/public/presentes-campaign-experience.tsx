@@ -72,9 +72,9 @@ function buildWheelBackground(prizes: CampaignPrizeStock[]) {
 }
 
 function getNoticeClass(tone: NoticeTone) {
-  if (tone === "success") return "campaign-status-success";
-  if (tone === "error") return "campaign-status-error";
-  return "campaign-status-info";
+  if (tone === "success") return "border border-emerald-700 bg-emerald-950 text-emerald-50";
+  if (tone === "error") return "border border-rose-700 bg-rose-950 text-rose-50";
+  return "border border-zinc-700 bg-zinc-950 text-zinc-50";
 }
 
 function formatPrizeQuantity(quantity: number | null) {
